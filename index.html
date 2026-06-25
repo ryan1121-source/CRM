@@ -184,7 +184,7 @@ textarea.voice-text:focus{outline:none;border-color:#1D9E75;background:#fff}
 <div class="toast" id="toast"></div>
 
 <script>
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUnLQobW95aSZqy2DRkplytiXy49e0haqEw-jQ0HABnI_Zrv-kGw9NdQT9MsxRUfOR/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwi1Rsy49fthryzPnf4DgraWDjZo5X20asvxVaPW0Ez8kTwot7OrgAPgI7hiqZ1LS_O/exec';
 var clients = [];
 var filter = '全部';
 var editIdx = -1;
@@ -286,16 +286,15 @@ function doAnalyze() {
 
   var systemPrompt = '你是業務CRM助理。從口語描述提取客戶資訊，只回傳JSON，不加任何說明或markdown符號。今天是' + todayStr + '（星期' + weekday + '）。格式：{"name":"姓名","status":"潛在客戶|追蹤中|成交|暫緩","followDate":"YYYY-MM-DD或空字串","contact":"電話或LINE或空字串","note":"30字內繁體中文備註"}狀態判斷：提到有興趣考慮→潛在客戶；已回覆需追蹤→追蹤中；已購買簽約→成交；暫時不考慮→暫緩。日期：下週X=計算實際日期。';
 
-  fetch(SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify({action: 'analyze', text: text})
-  })
+  var getUrl = SCRIPT_URL + '?text=' + encodeURIComponent(text);
+  fetch(getUrl)
   .then(function(r){ return r.json(); })
   .then(function(data) {
     console.log('Script response:', JSON.stringify(data));
-    try { parsed = data; } catch(e) {
-      parsed = {name:'', status:'潛在客戶', followDate:'', contact:'', note: text.slice(0,30)};
+    if (data.status === 'ok' || data.error) {
+      throw new Error(data.error || 'no data');
     }
+    parsed = data;
 
     var labels = {name:'姓名', status:'狀態', followDate:'跟進日期', contact:'聯絡方式', note:'備註'};
     var html = '';

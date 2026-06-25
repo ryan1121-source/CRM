@@ -248,8 +248,8 @@ function initSpeech() {
     for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
     document.getElementById('voiceText').value = t;
   };
-  recognition.onend = function() { stopRec(); };
-  recognition.onerror = function() { stopRec(); };
+  recognition.onend = function() { if (isRecording) { isRecording = false; } stopRec(); };
+  recognition.onerror = function() { isRecording = false; stopRec(); };
 }
 
 function stopRec() {
@@ -262,12 +262,14 @@ function stopRec() {
 function toggleRecording() {
   if (!recognition) { showToast('請直接在文字框輸入內容'); return; }
   if (isRecording) {
-    recognition.stop();
+    isRecording = false;
+    try { recognition.abort(); } catch(e) {}
+    stopRec();
   } else {
     isRecording = true;
     document.getElementById('micBtn').classList.add('recording');
     document.getElementById('micBtn').textContent = '⏹';
-    document.getElementById('micLabel').textContent = '錄音中...';
+    document.getElementById('micLabel').textContent = '點我停止';
     try { recognition.start(); } catch(e) { stopRec(); }
   }
 }

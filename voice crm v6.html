@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="業務CRM">
+<title>語音業務 CRM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:#F5F5F7;color:#1C1C1E;min-height:100vh}
+.topbar{background:#fff;border-bottom:0.5px solid #E0E0E0;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.topbar-icon{width:36px;height:36px;background:#1D9E75;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px}
+.topbar-title{font-size:17px;font-weight:600}
+.topbar-sub{font-size:12px;color:#888;margin-top:1px}
+.sync-dot{margin-left:auto;width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
+.sync-dot.ok{background:#1D9E75}
+.sync-dot.err{background:#E24B4A}
+.container{max-width:680px;margin:0 auto;padding:16px}
+.setup-banner{background:#FFF3CD;border:1px solid #F0C040;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#7A5C00;line-height:1.6}
+.setup-banner strong{display:block;margin-bottom:4px;font-size:14px}
+.setup-input-row{display:flex;gap:8px;margin-top:10px}
+.setup-input{flex:1;padding:9px 12px;border:1px solid #D0B050;border-radius:9px;font-size:13px;background:#fff;color:#1C1C1E}
+.btn-setup{background:#1D9E75;color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;-webkit-appearance:none}
+.voice-card{background:#fff;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.voice-row{display:flex;gap:12px;align-items:flex-start}
+.mic-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+.mic-btn{width:60px;height:60px;border-radius:50%;background:#1D9E75;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:26px;-webkit-appearance:none;transition:transform 0.1s,background 0.2s}
+.mic-btn:active{transform:scale(0.93)}
+.mic-btn.recording{background:#E24B4A;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(226,75,74,0.35)}50%{box-shadow:0 0 0 10px rgba(226,75,74,0)}}
+.mic-label{font-size:10px;color:#888;text-align:center}
+.voice-right{flex:1}
+.voice-hint{font-size:12px;color:#888;margin-bottom:8px;line-height:1.5}
+.voice-hint em{font-style:normal;color:#1D9E75;font-weight:500}
+textarea.voice-text{width:100%;min-height:72px;border:1px solid #E0E0E0;border-radius:10px;padding:10px 12px;font-size:15px;color:#1C1C1E;background:#F5F5F7;resize:none;font-family:-apple-system,sans-serif;-webkit-appearance:none;display:block}
+textarea.voice-text:focus{outline:none;border-color:#1D9E75;background:#fff}
+.voice-btns{display:flex;gap:8px;margin-top:10px}
+.btn-analyze{background:#1D9E75;color:#fff;border:none;border-radius:10px;padding:12px 20px;font-size:15px;font-weight:600;cursor:pointer;-webkit-appearance:none;min-width:100px}
+.btn-analyze:disabled{opacity:0.6}
+.btn-clear{background:#F5F5F7;color:#555;border:1px solid #E0E0E0;border-radius:10px;padding:12px 14px;font-size:15px;cursor:pointer;-webkit-appearance:none}
+.ai-result{background:#F0FBF6;border:1px solid #9FE1CB;border-radius:12px;padding:14px;margin-top:12px;display:none}
+.ai-result.show{display:block}
+.ai-result-label{font-size:11px;font-weight:600;color:#0F6E56;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px}
+.ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ai-field{background:#fff;border-radius:9px;padding:9px 11px;border:1px solid #C5EAD9}
+.ai-field-label{font-size:10px;color:#0F6E56;font-weight:600;margin-bottom:3px}
+.ai-field-val{font-size:13px;color:#1C1C1E;font-weight:500}
+.btn-confirm{width:100%;margin-top:12px;background:#0F6E56;color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;-webkit-appearance:none}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:12px;padding:12px 8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.stat-num{font-size:24px;font-weight:700}
+.stat-lbl{font-size:10px;color:#888;margin-top:2px}
+.s0 .stat-num{color:#378ADD}.s1 .stat-num{color:#BA7517}.s2 .stat-num{color:#1D9E75}.s3 .stat-num{color:#888}
+.tabs{display:flex;background:#fff;border-radius:12px;padding:4px;gap:2px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.tab{flex:1;padding:8px 4px;font-size:12px;font-weight:500;text-align:center;border:none;background:transparent;color:#888;border-radius:9px;cursor:pointer;-webkit-appearance:none}
+.tab.active{color:#fff;font-weight:600}
+.tab[data-s="全部"].active{background:#534AB7}
+.tab[data-s="潛在"].active{background:#378ADD}
+.tab[data-s="追蹤中"].active{background:#BA7517}
+.tab[data-s="成交"].active{background:#1D9E75}
+.tab[data-s="暫緩"].active{background:#888}
+.client-list{display:flex;flex-direction:column;gap:10px}
+.client-card{background:#fff;border-radius:14px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.07);display:flex;align-items:flex-start;gap:12px}
+.avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0}
+.client-body{flex:1;min-width:0}
+.client-name{font-size:16px;font-weight:600}
+.client-note{font-size:13px;color:#666;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.client-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px}
+.b0{background:#E6F1FB;color:#185FA5}.b1{background:#FAEEDA;color:#854F0B}.b2{background:#E1F5EE;color:#0F6E56}.b3{background:#F1EFE8;color:#5F5E5A}
+.meta-tag{font-size:11px;color:#888}
+.client-actions{display:flex;flex-direction:column;gap:6px}
+.btn-ic{width:34px;height:34px;border-radius:9px;background:#F5F5F7;border:1px solid #E0E0E0;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;-webkit-appearance:none}
+.btn-ic.del{color:#E24B4A}
+.empty{text-align:center;padding:48px 20px;color:#aaa;font-size:14px}
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200}
+.sheet-overlay.show{display:block}
+.sheet{position:fixed;bottom:0;left:0;right:0;background:#F5F5F7;border-radius:20px 20px 0 0;padding:0 0 50px;z-index:201;max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)}
+.sheet.show{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;background:#D0D0D0;border-radius:2px;margin:12px auto 16px}
+.sheet-title{font-size:17px;font-weight:600;text-align:center;margin-bottom:16px}
+.sheet-body{padding:0 16px}
+.field-group{background:#fff;border-radius:12px;overflow:hidden;margin-bottom:12px}
+.field-row{display:flex;align-items:center;padding:13px 14px;border-bottom:0.5px solid #F0F0F0}
+.field-row:last-child{border-bottom:none}
+.field-label{font-size:14px;color:#1C1C1E;width:80px;flex-shrink:0}
+.field-input{flex:1;font-size:14px;border:none;background:transparent;color:#1C1C1E;text-align:right;font-family:-apple-system,sans-serif;-webkit-appearance:none}
+.field-input:focus{outline:none}
+.sheet-btns{display:flex;gap:10px;padding:0 16px;margin-top:4px}
+.sheet-btn-cancel{flex:1;background:#fff;color:#1C1C1E;border:1px solid #E0E0E0;border-radius:12px;padding:14px;font-size:15px;font-weight:500;cursor:pointer;-webkit-appearance:none}
+.sheet-btn-save{flex:2;background:#1D9E75;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;-webkit-appearance:none}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:#1C1C1E;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:all 0.25s;z-index:999;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.loading{display:inline-block}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-icon">🎤</div>
+  <div>
+    <div class="topbar-title">語音業務 CRM</div>
+    <div class="topbar-sub" id="syncStatus">尚未連接 Google Sheets</div>
+  </div>
+  <div class="sync-dot" id="syncDot"></div>
+</div>
+
+<div class="container">
+
+  <div class="setup-banner" id="setupBanner">
+    <strong>⚙️ 連接 Google Sheets（可先跳過）</strong>
+    設定完成後，每筆紀錄都會自動同步到試算表。
+    <div class="setup-input-row">
+      <input class="setup-input" id="scriptUrl" type="url" placeholder="貼上 Apps Script 網址...">
+      <button class="btn-setup" onclick="saveScriptUrl()">儲存</button>
+    </div>
+  </div>
+
+  <div class="voice-card">
+    <div class="voice-row">
+      <div class="mic-wrap">
+        <button class="mic-btn" id="micBtn" onclick="toggleRecording()">🎤</button>
+        <span class="mic-label" id="micLabel">點擊錄音</span>
+      </div>
+      <div class="voice-right">
+        <div class="voice-hint">說完後按「AI 解析」，例如：<br><em>「王大明，很有興趣，下週三再追，LINE 0912000000」</em></div>
+        <textarea class="voice-text" id="voiceText" placeholder="語音內容顯示在這裡，也可以直接打字..."></textarea>
+        <div class="voice-btns">
+          <button class="btn-analyze" id="analyzeBtn" onclick="doAnalyze()">✦ AI 解析</button>
+          <button class="btn-clear" onclick="clearInput()">清除</button>
+        </div>
+        <div class="ai-result" id="aiResult">
+          <div class="ai-result-label">✦ AI 解析結果</div>
+          <div class="ai-grid" id="aiFields"></div>
+          <button class="btn-confirm" onclick="confirmAdd()">✓ 確認新增</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card s0"><div class="stat-num" id="c0">0</div><div class="stat-lbl">潛在客戶</div></div>
+    <div class="stat-card s1"><div class="stat-num" id="c1">0</div><div class="stat-lbl">追蹤中</div></div>
+    <div class="stat-card s2"><div class="stat-num" id="c2">0</div><div class="stat-lbl">成交</div></div>
+    <div class="stat-card s3"><div class="stat-num" id="c3">0</div><div class="stat-lbl">暫緩</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-s="全部" onclick="setFilter('全部')">全部</button>
+    <button class="tab" data-s="潛在" onclick="setFilter('潛在')">潛在</button>
+    <button class="tab" data-s="追蹤中" onclick="setFilter('追蹤中')">追蹤中</button>
+    <button class="tab" data-s="成交" onclick="setFilter('成交')">成交</button>
+    <button class="tab" data-s="暫緩" onclick="setFilter('暫緩')">暫緩</button>
+  </div>
+
+  <div class="client-list" id="clientList"></div>
+</div>
+
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">編輯客戶資料</div>
+  <div class="sheet-body">
+    <div class="field-group">
+      <div class="field-row"><span class="field-label">姓名</span><input class="field-input" id="e-name" type="text"></div>
+      <div class="field-row"><span class="field-label">狀態</span>
+        <select class="field-input" id="e-status">
+          <option>潛在客戶</option><option>追蹤中</option><option>成交</option><option>暫緩</option>
+        </select>
+      </div>
+      <div class="field-row"><span class="field-label">跟進日期</span><input class="field-input" id="e-date" type="date"></div>
+      <div class="field-row"><span class="field-label">聯絡方式</span><input class="field-input" id="e-contact" type="text" placeholder="電話 / LINE"></div>
+      <div class="field-row"><span class="field-label">備註</span><input class="field-input" id="e-note" type="text"></div>
+    </div>
+  </div>
+  <div class="sheet-btns">
+    <button class="sheet-btn-cancel" onclick="closeSheet()">取消</button>
+    <button class="sheet-btn-save" onclick="saveEdit()">儲存</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUnLQobW95aSZqy2DRkplytiXy49e0haqEw-jQ0HABnI_Zrv-kGw9NdQT9MsxRUfOR/exec';
+var clients = [];
+var filter = '全部';
+var editIdx = -1;
+var parsed = null;
+var recognition = null;
+var isRecording = false;
+var scriptUrl = SCRIPT_URL;
+
+try { clients = JSON.parse(localStorage.getItem('crm_clients') || '[]'); } catch(e) { clients = []; }
+try { scriptUrl = localStorage.getItem('crm_script_url') || ''; } catch(e) {}
+
+var avatarStyle = {
+  '潛在客戶':'background:#E6F1FB;color:#185FA5',
+  '追蹤中':'background:#FAEEDA;color:#854F0B',
+  '成交':'background:#E1F5EE;color:#0F6E56',
+  '暫緩':'background:#F1EFE8;color:#5F5E5A'
+};
+var badgeClass = {'潛在客戶':'b0','追蹤中':'b1','成交':'b2','暫緩':'b3'};
+
+function save() {
+  try { localStorage.setItem('crm_clients', JSON.stringify(clients)); } catch(e) {}
+}
+
+function showToast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 2200);
+}
+
+function saveScriptUrl() {
+  var url = document.getElementById('scriptUrl').value.trim();
+  if (!url) { showToast('請貼上網址'); return; }
+  scriptUrl = url;
+  try { localStorage.setItem('crm_script_url', url); } catch(e) {}
+  document.getElementById('setupBanner').style.display = 'none';
+  document.getElementById('syncDot').className = 'sync-dot ok';
+  document.getElementById('syncStatus').textContent = '已連接 Google Sheets';
+  showToast('✓ 設定儲存成功！');
+}
+
+function syncToSheets(client) {
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({action: 'save', client: client})
+  }).catch(function(){});
+}
+
+function initSpeech() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  recognition = new SR();
+  recognition.lang = 'zh-TW';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.onresult = function(e) {
+    var t = '';
+    for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+    document.getElementById('voiceText').value = t;
+  };
+  recognition.onend = function() { if (isRecording) { isRecording = false; } stopRec(); };
+  recognition.onerror = function() { isRecording = false; stopRec(); };
+}
+
+function stopRec() {
+  isRecording = false;
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('micBtn').textContent = '🎤';
+  document.getElementById('micLabel').textContent = '點擊錄音';
+}
+
+function toggleRecording() {
+  if (!recognition) { showToast('請直接在文字框輸入內容'); return; }
+  if (isRecording) {
+    isRecording = false;
+    try { recognition.abort(); } catch(e) {}
+    stopRec();
+  } else {
+    isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micBtn').textContent = '⏹';
+    document.getElementById('micLabel').textContent = '點我停止';
+    try { recognition.start(); } catch(e) { stopRec(); }
+  }
+}
+
+function doAnalyze() {
+  var text = document.getElementById('voiceText').value.trim();
+  if (!text) { showToast('請先輸入或錄音內容'); return; }
+
+  var btn = document.getElementById('analyzeBtn');
+  btn.textContent = '解析中...';
+  btn.disabled = true;
+
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  var weekdays = ['日','一','二','三','四','五','六'];
+  var weekday = weekdays[today.getDay()];
+
+  var systemPrompt = '你是業務CRM助理。從口語描述提取客戶資訊，只回傳JSON，不加任何說明或markdown符號。今天是' + todayStr + '（星期' + weekday + '）。格式：{"name":"姓名","status":"潛在客戶|追蹤中|成交|暫緩","followDate":"YYYY-MM-DD或空字串","contact":"電話或LINE或空字串","note":"30字內繁體中文備註"}狀態判斷：提到有興趣考慮→潛在客戶；已回覆需追蹤→追蹤中；已購買簽約→成交；暫時不考慮→暫緩。日期：下週X=計算實際日期。';
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({action: 'analyze', text: text})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    console.log('Script response:', JSON.stringify(data));
+    try { parsed = data; } catch(e) {
+      parsed = {name:'', status:'潛在客戶', followDate:'', contact:'', note: text.slice(0,30)};
+    }
+
+    var labels = {name:'姓名', status:'狀態', followDate:'跟進日期', contact:'聯絡方式', note:'備註'};
+    var html = '';
+    for (var k in labels) {
+      html += '<div class="ai-field"><div class="ai-field-label">' + labels[k] + '</div><div class="ai-field-val">' + (parsed[k] || '—') + '</div></div>';
+    }
+    document.getElementById('aiFields').innerHTML = html;
+    document.getElementById('aiResult').classList.add('show');
+  })
+  .catch(function(err) {
+    showToast('AI 解析失敗，請再試一次');
+    console.log(err);
+  })
+  .finally(function() {
+    btn.textContent = '✦ AI 解析';
+    btn.disabled = false;
+  });
+}
+
+function confirmAdd() {
+  if (!parsed) return;
+  var client = {
+    id: Date.now(),
+    name: parsed.name || '未命名',
+    status: parsed.status || '潛在客戶',
+    followDate: parsed.followDate || '',
+    contact: parsed.contact || '',
+    note: parsed.note || '',
+    createdAt: new Date().toISOString()
+  };
+  clients.unshift(client);
+  save();
+  syncToSheets(client);
+  render();
+  clearInput();
+  showToast('✓ 已新增「' + client.name + '」');
+}
+
+function clearInput() {
+  document.getElementById('voiceText').value = '';
+  document.getElementById('aiResult').classList.remove('show');
+  parsed = null;
+}
+
+function setFilter(f) {
+  filter = f;
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.dataset.s === f); });
+  render();
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  var dt = new Date(d + 'T00:00:00');
+  if (isNaN(dt)) return d;
+  return (dt.getMonth()+1) + '/' + dt.getDate();
+}
+
+function render() {
+  var cnt = {'潛在客戶':0,'追蹤中':0,'成交':0,'暫緩':0};
+  clients.forEach(function(c){ if(cnt[c.status]!==undefined) cnt[c.status]++; });
+  document.getElementById('c0').textContent = cnt['潛在客戶'];
+  document.getElementById('c1').textContent = cnt['追蹤中'];
+  document.getElementById('c2').textContent = cnt['成交'];
+  document.getElementById('c3').textContent = cnt['暫緩'];
+
+  var filtered = filter === '全部' ? clients : clients.filter(function(c){
+    if (filter === '潛在') return c.status === '潛在客戶';
+    return c.status === filter;
+  });
+
+  var list = document.getElementById('clientList');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">🙋 還沒有客戶資料<br>用語音新增第一筆吧！</div>';
+    return;
+  }
+
+  var html = '';
+  filtered.forEach(function(c) {
+    var idx = clients.indexOf(c);
+    var av = avatarStyle[c.status] || avatarStyle['潛在客戶'];
+    var bc = badgeClass[c.status] || 'b0';
+    var initials = (c.name || '?').slice(0,2);
+    html += '<div class="client-card">' +
+      '<div class="avatar" style="' + av + '">' + initials + '</div>' +
+      '<div class="client-body">' +
+        '<div class="client-name">' + (c.name||'未命名') + '</div>' +
+        '<div class="client-note">' + (c.note||'無備註') + '</div>' +
+        '<div class="client-meta">' +
+          '<span class="badge ' + bc + '">' + c.status + '</span>' +
+          (c.followDate ? '<span class="meta-tag">📅 ' + formatDate(c.followDate) + '</span>' : '') +
+          (c.contact ? '<span class="meta-tag">📞 ' + c.contact + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="client-actions">' +
+        '<button class="btn-ic" onclick="openEdit(' + idx + ')">✏️</button>' +
+        '<button class="btn-ic del" onclick="deleteClient(' + idx + ')">🗑</button>' +
+      '</div>' +
+    '</div>';
+  });
+  list.innerHTML = html;
+}
+
+function openEdit(idx) {
+  editIdx = idx;
+  var c = clients[idx];
+  document.getElementById('e-name').value = c.name || '';
+  document.getElementById('e-status').value = c.status || '潛在客戶';
+  document.getElementById('e-date').value = c.followDate || '';
+  document.getElementById('e-contact').value = c.contact || '';
+  document.getElementById('e-note').value = c.note || '';
+  document.getElementById('sheetOverlay').classList.add('show');
+  setTimeout(function(){ document.getElementById('sheet').classList.add('show'); }, 10);
+}
+
+function closeSheet() {
+  document.getElementById('sheet').classList.remove('show');
+  document.getElementById('sheetOverlay').classList.remove('show');
+}
+
+function saveEdit() {
+  if (editIdx < 0) return;
+  clients[editIdx].name = document.getElementById('e-name').value;
+  clients[editIdx].status = document.getElementById('e-status').value;
+  clients[editIdx].followDate = document.getElementById('e-date').value;
+  clients[editIdx].contact = document.getElementById('e-contact').value;
+  clients[editIdx].note = document.getElementById('e-note').value;
+  save();
+  render();
+  closeSheet();
+  showToast('✓ 已更新');
+}
+
+function deleteClient(idx) {
+  if (!confirm('確定刪除「' + clients[idx].name + '」？')) return;
+  clients.splice(idx, 1);
+  save();
+  render();
+}
+
+document.getElementById('setupBanner').style.display = 'none';
+document.getElementById('syncDot').className = 'sync-dot ok';
+document.getElementById('syncStatus').textContent = '已連接 Google Sheets';
+
+initSpeech();
+render();
+</script>
+</body>
+</html>

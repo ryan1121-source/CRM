@@ -291,20 +291,35 @@ function doAnalyze() {
 
   var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
 
+  var fullPrompt = systemPrompt + '\n\n用戶輸入：' + text;
+
   fetch(url, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
-      system_instruction: {parts: [{text: systemPrompt}]},
-      contents: [{parts: [{text: text}]}]
+      contents: [{
+        role: 'user',
+        parts: [{text: fullPrompt}]
+      }],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 500
+      }
     })
   })
   .then(function(r){ return r.json(); })
   .then(function(data) {
+    console.log('Gemini response:', JSON.stringify(data));
     var raw = '';
-    try { raw = data.candidates[0].content.parts[0].text; } catch(e) { raw = '{}'; }
+    try { raw = data.candidates[0].content.parts[0].text; } catch(e) { 
+      console.log('Parse error:', e);
+      raw = '{}'; 
+    }
     raw = raw.replace(/```json|```/g,'').trim();
-    parsed = JSON.parse(raw);
+    try { parsed = JSON.parse(raw); } catch(e) { 
+      console.log('JSON error:', raw);
+      parsed = {name:'', status:'潛在客戶', followDate:'', contact:'', note: text.slice(0,30)};
+    }
 
     var labels = {name:'姓名', status:'狀態', followDate:'跟進日期', contact:'聯絡方式', note:'備註'};
     var html = '';

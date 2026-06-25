@@ -184,7 +184,7 @@ textarea.voice-text:focus{outline:none;border-color:#1D9E75;background:#fff}
 <div class="toast" id="toast"></div>
 
 <script>
-var GEMINI_KEY = 'AQ.Ab8RN6JweuIzfHIY5RReJusWzv6hb-VfQjq9A2veahCtDgDueQ';
+var CLAUDE_KEY = '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';
 var clients = [];
 var filter = '全部';
 var editIdx = -1;
@@ -289,34 +289,31 @@ function doAnalyze() {
 
   var systemPrompt = '你是業務CRM助理。從口語描述提取客戶資訊，只回傳JSON，不加任何說明或markdown符號。今天是' + todayStr + '（星期' + weekday + '）。格式：{"name":"姓名","status":"潛在客戶|追蹤中|成交|暫緩","followDate":"YYYY-MM-DD或空字串","contact":"電話或LINE或空字串","note":"30字內繁體中文備註"}狀態判斷：提到有興趣考慮→潛在客戶；已回覆需追蹤→追蹤中；已購買簽約→成交；暫時不考慮→暫緩。日期：下週X=計算實際日期。';
 
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
-
-  var fullPrompt = systemPrompt + '\n\n用戶輸入：' + text;
-
-  fetch(url, {
+  fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': CLAUDE_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
     body: JSON.stringify({
-      contents: [{
-        role: 'user',
-        parts: [{text: fullPrompt}]
-      }],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 500
-      }
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 500,
+      system: systemPrompt,
+      messages: [{role: 'user', content: text}]
     })
   })
   .then(function(r){ return r.json(); })
   .then(function(data) {
-    console.log('Gemini response:', JSON.stringify(data));
+    console.log('Claude response:', JSON.stringify(data));
     var raw = '';
-    try { raw = data.candidates[0].content.parts[0].text; } catch(e) { 
+    try { raw = data.content[0].text; } catch(e) {
       console.log('Parse error:', e);
-      raw = '{}'; 
+      raw = '{}';
     }
     raw = raw.replace(/```json|```/g,'').trim();
-    try { parsed = JSON.parse(raw); } catch(e) { 
+    try { parsed = JSON.parse(raw); } catch(e) {
       console.log('JSON error:', raw);
       parsed = {name:'', status:'潛在客戶', followDate:'', contact:'', note: text.slice(0,30)};
     }
